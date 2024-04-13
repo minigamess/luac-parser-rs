@@ -323,6 +323,40 @@ fn lua_header(input: &[u8]) -> IResult<&[u8], LuaHeader, ErrorTree<&[u8]>> {
             ),
             map(
                 tuple((
+                    tag(b"\x53\x01"),
+                    take(6usize), // LUAC_DATA
+                    be_u8,
+                    be_u8,
+                    be_u8,
+                    be_u8,
+                    complete::le_i64,
+                    complete::le_f64,
+                    be_u8,
+                )),
+                |(
+                    _,
+                    _luac_data,
+                    int_size,
+                    instruction_size,
+                    _integer_size, // lua_Integer
+                    number_size,
+                    _,
+                    _,
+                    _,
+                )| LuaHeader {
+                    lua_version: LUA53.0,
+                    format_version: 0,
+                    big_endian: cfg!(target_endian = "big"),
+                    int_size,
+                    size_t_size: 4,
+                    instruction_size,
+                    number_size,
+                    number_integral: false,
+                    ..Default::default()
+                },
+            ),
+            map(
+                tuple((
                     tag(b"\x53"),
                     be_u8,
                     take(6usize), // LUAC_DATA
